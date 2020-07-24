@@ -33,3 +33,5 @@ g++ -shared -I"${V8_INCLUDE}" $JAVA_INCLUDES \
 	-o $OUTPUT_FILE \
 	-Wl,$V8_OBJ/libv8_monolith.a \
 	-ldl -pthread -std=c++11 -fPIC
+
+echo -e "\n\nDone.\nDon't forget to run \`./test.sh\` to see if everything works.\n"
