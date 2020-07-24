@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"target": "es5",
 		"inlineSourceMap": true,
-		"sourceRoot": "typescript",
+		"sourceRoot": "",
 		"downlevelIteration": true,
 		"experimentalDecorators": true,
 		"lib": [

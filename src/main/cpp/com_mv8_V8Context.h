@@ -10,9 +10,9 @@ extern "C" {
 /*
  * Class:     com_mv8_V8Context
  * Method:    _runScript
- * Signature: (JJLjava/lang/String;Ljava/lang/String;)J
+ * Signature: (JJLjava/lang/String;Ljava/lang/String;)Ljava/lang/String;
  */
-JNIEXPORT jlong JNICALL Java_com_mv8_V8Context__1runScript
+JNIEXPORT jstring JNICALL Java_com_mv8_V8Context__1runScript
   (JNIEnv *, jclass, jlong, jlong, jstring, jstring);
 
 /*

@@ -18,11 +18,11 @@ public class V8Context implements AutoCloseable {
 		this.callback = cb;
 	}
 	
-	public V8Value runScript(String script, String scriptName) {
+	public String runScript(String script, String scriptName) {
 		if (closed) {
 			throw new RuntimeException("context closed");
 		}
-		return new V8Value(isolatePtr, ptr, _runScript(isolatePtr, ptr, script, scriptName));
+		return _runScript(isolatePtr, ptr, script, scriptName);
 	}
 
 	public String __calljava(String message) {
@@ -32,7 +32,7 @@ public class V8Context implements AutoCloseable {
 		return callback.call(message);
 	}
 
-	private static native long _runScript(long isolatePtr, long contextPtr, String script, String scriptName);
+	private static native String _runScript(long isolatePtr, long contextPtr, String script, String scriptName);
 	private static native void _dispose(long isolatePtr, long contextPtr);
 
 	@Override

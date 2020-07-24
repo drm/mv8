@@ -24,7 +24,6 @@ import com.mv8.InspectorCallbacks;
 import com.mv8.V8;
 import com.mv8.V8Context;
 import com.mv8.V8Isolate;
-import com.mv8.V8Value;
 
 public class DebugServer {
 	
@@ -37,10 +36,8 @@ public class DebugServer {
 	class DebugSocketServlet implements InspectorCallbacks {
 		private V8Isolate isolate;
 		private LinkedBlockingQueue<String> messagesFromInspectorFrontEnd = new LinkedBlockingQueue<>();
-		private boolean quitMessageLoop;
 		
 		private Session session;
-		private boolean paused;
 		
 		private DebugSocketServlet(V8Isolate isolate, String urlPath) {
 			this.isolate = isolate;
@@ -76,52 +73,28 @@ public class DebugServer {
 			}), urlPath);
 			
 			isolate.setInspectorCallbacks(this);
-			
-			new Thread(() -> {
-				try {
-					while (true) {
-						if (!paused) {
-							String message = messagesFromInspectorFrontEnd.poll();
-							if (message != null) {
-								logger.debug("Passing message: " + message);
-								isolate.sendInspectorMessage(message);
-							}
-						}
-						Thread.yield();
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}).start();
 		}
 		
 		public void runMessageLoop() throws Exception {
 			logger.warn("Entering runMessageLoop");
 			while (true) {
-				String message = messagesFromInspectorFrontEnd.poll();
-				if (message != null) {
-					logger.debug("Passing message: " + message);
-					isolate.sendInspectorMessage(message);
-				}
-				if (quitMessageLoop) {
-					quitMessageLoop = false;
-					paused = false;
+				String message = messagesFromInspectorFrontEnd.take();
+				if ("__QUIT__".equals(message)) {
 					logger.debug("quitting!");
 					return;
-				} else {
-					Thread.yield();
 				}
+				logger.debug("Passing message: " + message);
+				isolate.sendInspectorMessage(message);
 			}
 		}
 		
 		public void quitMessageLoopOnPause() {
 			logger.info("Quit message loop");
-			quitMessageLoop = true;
+			messagesFromInspectorFrontEnd.add("__QUIT__");
 		}
 		
 		public void runMessageLoopOnPause() {
 			try {
-				paused = true;
 				runMessageLoop();
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -141,8 +114,8 @@ public class DebugServer {
 		@Override
 		public void runIfWaitingForDebugger() {
 			logger.info("runIfWaitingForDebugger called");
+			messagesFromInspectorFrontEnd.add("__QUIT__");
 		}
-
 	}
 	
 	
@@ -186,11 +159,10 @@ public class DebugServer {
 	public static void main(String[] args) throws Exception {
 		DebugServer server = start(9999);
 		
-		byte[] startupData = V8.createStartupDataBlob(new String(Files.readAllBytes(Paths.get("js", "react.js")), StandardCharsets.UTF_8.name()), "<embedded> react.js");
+		byte[] startupData = V8.createStartupDataBlob("process = {pid: 12345, version: '8.3.14', arch: 'darwin'};\n\n" + new String(Files.readAllBytes(Paths.get("js", "react.js")), StandardCharsets.UTF_8.name()), "<embedded> react.js");
 		V8Isolate isolate = V8.createIsolate(startupData);
 		
-		server.attachIsolate(isolate);
-
+		InspectableIsolate socket = server.attachIsolate(isolate);
 		V8Context contextOne = isolate.createContext("one");
 
 		Thread.sleep(5000);
@@ -201,34 +173,59 @@ public class DebugServer {
 				+ " debugger;\n"
 				+ " return 'did it' + (a * b);\n"
 				+ "};\n", "");
-		V8Value result = contextOne.runScript("debugIt()", "");
-		System.out.println("RESULT: " + result.getStringValue());
+		String result = contextOne.runScript("debugIt()", "");
+		System.out.println("RESULT: " + result);
 		
-////		V8Context contextTwo = isolate.createContext("two");
-////		contextTwo.runScript(
-////				  "debugIt = function() {\n"
-////				+ " const a = 4, b = 5;\n"
-////				+ " return 'did it' + (a * b);\n"
-////				+ "};\n"
-////				+ "debugIt();\n", "");
-////
+		V8Context contextTwo = isolate.createContext("two");
+		contextTwo.runScript(
+				  "debugIt = function() {\n"
+				+ " const a = 4, b = 5;\n"
+				+ " return 'did it' + (a * b);\n"
+				+ "};\n"
+				+ "debugIt();\n", "");
+		
 //		byte[] startupDataReact = V8.createStartupDataBlob(new String(Files.readAllBytes(Paths.get("js", "react.js")), StandardCharsets.UTF_8.name()), "<embedded>");
-//
-//		V8Isolate isolateTwo = V8.createIsolate(startupDataReact);
-//		server.attachIsolate(isolateTwo);
-//
-//		V8Context i2 = isolateTwo.createContext("isolateTwo");
-//		i2.runScript("function bla() {console.log(\"BLA!\");}", "");
-//
+
+		new Thread(() -> {
+			try (V8Isolate isolateTwo = V8.createIsolate(startupData);
+				InspectableIsolate inspectable = server.attachIsolate(isolateTwo);
+				V8Context i2 = isolateTwo.createContext("isolateTwo"); ) {
+				i2.runScript("function bla() {console.log(\"BLA!\");}", "");
+				inspectable.runMessageLoop();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}).start();
+
+		socket.runMessageLoop();
+		
 		server.join();
 	}
 
-	public void attachIsolate(V8Isolate isolate) {
+	public abstract static class InspectableIsolate implements AutoCloseable {
+
+		private final DebugSocketServlet socket;
+
+		public InspectableIsolate(DebugSocketServlet socket) {
+			this.socket = socket;
+		}
+
+		public void runMessageLoop() throws Exception {
+			socket.runMessageLoop();
+		}
+	}
+
+	public InspectableIsolate attachIsolate(V8Isolate isolate) {
 		String id = UUID.randomUUID().toString();
 		String urlPath = "/" + id;
 
 		IsolateMetadata metaData = IsolateMetadata.create("MV8", "localhost", port, id, urlPath);
 		isolatesMetaData.add(metaData);
-		new DebugSocketServlet(isolate, urlPath);
+		DebugSocketServlet socket = new DebugSocketServlet(isolate, urlPath);
+		return new InspectableIsolate(socket) {
+			@Override
+			public void close() throws Exception {
+				isolatesMetaData.remove(metaData);
+			}};
 	}
 }

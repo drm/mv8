@@ -8,8 +8,8 @@
 #include <iostream>
 #include <thread>
 
-#include "include/libplatform/libplatform.h"
-#include "include/v8.h"
+#include "libplatform/libplatform.h"
+#include "v8.h"
 #include <unistd.h>
 #include <sys/time.h>
 
@@ -35,32 +35,35 @@ long microtime() {
 // switch scope, wait for result in different thread
 
 static void LogCallback(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  if (args.Length() < 1) return;
-  Isolate::Scope isolate_scope(args.GetIsolate());
-  HandleScope scope(args.GetIsolate());
-  Local<Value> arg = args[0];
-  String::Utf8Value value(arg);
-  printf("log: %s\n", *value);
+	if (args.Length() < 1) return;
+
+	Isolate::Scope isolate_scope(args.GetIsolate());
+	HandleScope scope(args.GetIsolate());
+	Local<Value> arg = args[0];
+	String::Utf8Value value(args.GetIsolate(), arg);
+	printf("log: %s\n", *value);
 	long start = microtime();
 	isolate->Exit();
 	v8::Unlocker unlock(isolate);
 	// printf("Unlock took %ld\n", microtime() - start);fflush(stdout);
 
-  std::thread::id this_id = std::this_thread::get_id();
- 
-    // g_display_mutex.lock();
-    std::cout << "thread " << this_id << " sleeping...\n";
-    // g_display_mutex.unlock();
+	std::thread::id this_id = std::this_thread::get_id();
 
-  	usleep(500000);
-    std::cout << "thread " << this_id << " waking up...\n";
-  {
-	long start = microtime();
-	v8::Locker lock(isolate);
-	isolate->Enter();
-	// printf("Lock took %ld\n", microtime() - start);fflush(stdout);
-  }
+	// g_display_mutex.lock();
+	std::cout << "thread " << this_id << " sleeping...\n";
+	// g_display_mutex.unlock();
+
+	usleep(500000);
+	std::cout << "thread " << this_id << " waking up...\n";
+	{
+		long start = microtime();
+		v8::Locker lock(isolate);
+		isolate->Enter();
+		// printf("Lock took %ld\n", microtime() - start);fflush(stdout);
+	}
 }
+
+const char * henk = "henk";
 
 void runInIsolate(const char * scriptSource) {
 	v8::Locker locker(isolate);
@@ -73,9 +76,14 @@ void runInIsolate(const char * scriptSource) {
 	Local<Context> context = Context::New(isolate, NULL, global->Get(isolate));
 	Context::Scope context_scope(context);
 
+	// Local<String> string = String::NewFromUtf8(isolate, henk).ToLocalChecked();
+	Local<External> ext = External::New(isolate, (void *)henk);
+	context->SetEmbedderData(2, ext);
+	context->GetEmbedderData(2);
+
 	Local<Script> script = Script::Compile(context, source).ToLocalChecked();
 	Local<Value> result = script->Run(context).ToLocalChecked();
-	String::Utf8Value utf8(result);
+	String::Utf8Value utf8(isolate, result);
 	printf("%s\n", *utf8);
 }
 
@@ -86,8 +94,8 @@ int main(int argc, char *argv[])
 	// V8::InitializeICUDefaultLocation(argv[0]);
 	V8::InitializeExternalStartupData(argv[0]);
 
-	Platform *platform = platform::CreateDefaultPlatform();
-	V8::InitializePlatform(platform);
+	std::unique_ptr<v8::Platform> v8Platform = platform::NewDefaultPlatform();
+	V8::InitializePlatform(v8Platform.get());
 	V8::Initialize();
 
 	// Create a new Isolate and make it the current one.
@@ -128,7 +136,6 @@ int main(int argc, char *argv[])
 
 	V8::Dispose();
 	V8::ShutdownPlatform();
-	delete platform;
 	delete create_params.array_buffer_allocator;
 	return 0;
 }

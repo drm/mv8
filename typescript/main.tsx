@@ -12,7 +12,6 @@ interface Props {
 class ContentItem extends React.Component<Props,State> {
 	render() {
 		const {title, text} = this.props as any;
-		debugger;
 		return (
 			<div>
 				<h1>{title}</h1>
@@ -23,6 +22,7 @@ class ContentItem extends React.Component<Props,State> {
 }
 
 function renderHTML() {
+	debugger;
 	const html = ReactDOMServer.renderToStaticMarkup(
 		<body>
 			<ContentItem title="Example title" text="Example text"/>
