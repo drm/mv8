@@ -186,12 +186,15 @@ public class DebugServer {
 	public static void main(String[] args) throws Exception {
 		DebugServer server = start(9999);
 		
-		byte[] startupData = V8.createStartupDataBlob(new String(Files.readAllBytes(Paths.get("js", "react.js")), StandardCharsets.UTF_8.name()), "<embedded>");
+		byte[] startupData = V8.createStartupDataBlob(new String(Files.readAllBytes(Paths.get("js", "react.js")), StandardCharsets.UTF_8.name()), "<embedded> react.js");
 		V8Isolate isolate = V8.createIsolate(startupData);
 		
 		server.attachIsolate(isolate);
-		
+
 		V8Context contextOne = isolate.createContext("one");
+
+		Thread.sleep(5000);
+		logger.info("running script");
 		contextOne.runScript(
 				  "debugIt = function() {\n"
 				+ " const a = 6, b = 7;\n"
@@ -201,22 +204,22 @@ public class DebugServer {
 		V8Value result = contextOne.runScript("debugIt()", "");
 		System.out.println("RESULT: " + result.getStringValue());
 		
-		V8Context contextTwo = isolate.createContext("two");
-		contextTwo.runScript(
-				  "debugIt = function() {\n"
-				+ " const a = 4, b = 5;\n"
-				+ " return 'did it' + (a * b);\n"
-				+ "};\n"
-				+ "debugIt();\n", "");
-		
-		byte[] startupDataReact = V8.createStartupDataBlob(new String(Files.readAllBytes(Paths.get("js", "react.js")), StandardCharsets.UTF_8.name()), "<embedded>");
-		
-		V8Isolate isolateTwo = V8.createIsolate(startupDataReact);
-		server.attachIsolate(isolateTwo);
-		
-		V8Context i2 = isolateTwo.createContext("isolateTwo");
-		i2.runScript("function bla() {console.log(\"BLA!\");}", "");
-		
+////		V8Context contextTwo = isolate.createContext("two");
+////		contextTwo.runScript(
+////				  "debugIt = function() {\n"
+////				+ " const a = 4, b = 5;\n"
+////				+ " return 'did it' + (a * b);\n"
+////				+ "};\n"
+////				+ "debugIt();\n", "");
+////
+//		byte[] startupDataReact = V8.createStartupDataBlob(new String(Files.readAllBytes(Paths.get("js", "react.js")), StandardCharsets.UTF_8.name()), "<embedded>");
+//
+//		V8Isolate isolateTwo = V8.createIsolate(startupDataReact);
+//		server.attachIsolate(isolateTwo);
+//
+//		V8Context i2 = isolateTwo.createContext("isolateTwo");
+//		i2.runScript("function bla() {console.log(\"BLA!\");}", "");
+//
 		server.join();
 	}
 
