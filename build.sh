@@ -17,13 +17,15 @@ V8_VERSION=7.3.492.27.1
 # Install libv8 Ruby gem
 # sudo gem install libv8 --version $V8_VERSION
 
-# this also generates/updates JNI header files in src/main/cpp/
-gradle assemble
+mkdir -p bin
+javac -cp "lib/*" $(find src -name "*.java") -d bin -h src/main/cpp;
 
 JAVA_HOME="$(java -XshowSettings:properties -version 2>&1 > /dev/null | grep 'java.home' | grep -oE '\S+$')"
-V8_BASE="$(cd $(dirname $(gem which libv8))/../vendor/v8 ; pwd)"
+#V8_BASE="$(cd $(dirname $(gem which libv8))/../vendor/v8 ; pwd)"
+V8_BASE="/home/gerard/git/v8"
 V8_INCLUDE="$V8_BASE/include"
-V8_OBJ="$V8_BASE/out.gn/libv8/obj"
+#V8_OBJ="$V8_BASE/out.gn/libv8/obj"
+V8_OBJ="$V8_BASE/out.gn/x64.release.sample/obj"
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	JAVA_INCLUDES="-I$JAVA_HOME/include -I$JAVA_HOME/include/linux"
