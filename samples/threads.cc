@@ -7,6 +7,7 @@
 #include <string.h>
 #include <iostream>
 #include <thread>
+#include <mutex>
 
 #include "libplatform/libplatform.h"
 #include "v8.h"
