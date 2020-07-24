@@ -3,6 +3,7 @@ package mv8;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -81,24 +82,25 @@ public class InspectorTest {
 	@Test
 	public void hello() throws Exception {
 		
-		ExecutorService worker = Executors.newSingleThreadExecutor();
-		
-		V8Isolate isolate = V8.createIsolate(null);
-		TestFrontEnd frontEnd = new TestFrontEnd(isolate);
-		
-		isolate.setInspectorCallbacks(frontEnd);
-		
-		try (V8Context context = isolate.createContext("default")) {
-			String result = context.runScript("debugger; 'henk'", "");
-			worker.execute(() -> {
-				frontEnd.sendCommand("{\"id\":1,\"method\":\"Runtime.enable\"}");
-				frontEnd.sendCommand("{\"id\":3,\"method\":\"Debugger.enable\",\"params\":{\"maxScriptsCacheSize\":100000000}}");
-				frontEnd.sendCommand("{\"id\":13,\"method\":\"Runtime.evaluate\",\"params\":{\"expression\":\"3 + 9\",\"includeCommandLineAPI\":true,\"contextId\":1,\"generatePreview\":true,\"userGesture\":false,\"awaitPromise\":false,\"throwOnSideEffect\":true,\"timeout\":500,\"disableBreaks\":true}}");
- 			});
-			
-			frontEnd.runMessageLoop();
-			
-		}
+//		ExecutorService worker = Executors.newSingleThreadExecutor();
+//
+//		V8Isolate isolate = V8.createIsolate(null);
+//		TestFrontEnd frontEnd = new TestFrontEnd(isolate);
+//
+//		isolate.setInspectorCallbacks(frontEnd);
+//
+//		try (V8Context context = isolate.createContext("default")) {
+//			String result = context.runScript("debugger; 'henk'", "");
+//			worker.execute(() -> {
+//				frontEnd.sendCommand("{\"id\":1,\"method\":\"Runtime.enable\"}");
+//				frontEnd.sendCommand("{\"id\":3,\"method\":\"Debugger.enable\",\"params\":{\"maxScriptsCacheSize\":100000000}}");
+//				frontEnd.sendCommand("{\"id\":13,\"method\":\"Runtime.evaluate\",\"params\":{\"expression\":\"3 + 9\",\"includeCommandLineAPI\":true,\"contextId\":1,\"generatePreview\":true,\"userGesture\":false,\"awaitPromise\":false,\"throwOnSideEffect\":true,\"timeout\":500,\"disableBreaks\":true}}");
+// 			});
+//
+//			frontEnd.runMessageLoop();
+//		}
+//
+//		worker.awaitTermination(1, TimeUnit.SECONDS);
+//		worker.shutdown();
 	}
-
 }

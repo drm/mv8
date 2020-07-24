@@ -41,7 +41,7 @@ public class PerformanceTest {
 		String warmUp = "ReactDOMServer.renderToStaticMarkup(React.createElement(\"body\"))";
 		
 		byte[] startupData = V8.createStartupDataBlob(reactJs + "\n" + warmUp, "<embedded>");
-		System.out.println("startyp data size: " + startupData.length);
+		System.out.println("startup data size: " + startupData.length);
 		
 		try (V8Isolate isolate = V8.createIsolate(startupData);) {
 			TimeIt.time("create 10 contexts", () -> {
@@ -85,7 +85,7 @@ public class PerformanceTest {
 			context.setCallback(cb);
 			
 			context.runScript("__calljava('print:henk')", "");
-			context.runScript("setTimeout(() => __calljava('print:henk'), 0)", "");
+//			context.runScript("setTimeout(() => __calljava('print:henk'), 0)", "");
 			
 			Thread.sleep(100);
 		} catch (Exception e) {

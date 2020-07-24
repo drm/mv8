@@ -17,28 +17,28 @@ public class InspectorThreadsTest {
 
 	@Test
 	public void hello() throws Exception {
-		
-		DebugServer debugServer = DebugServer.start(9999);
-		
-		V8Isolate isolate = V8.createIsolate(null);
-		debugServer.attachIsolate(isolate);
-		
-		List<Thread> threads = new ArrayList<>();
-		for (int i = 0; i < 2; i++) {
-			Thread thread = new Thread(() -> {
-				try (V8Context context = isolate.createContext("default")) {
-//				V8Value result = context.runScript("'Hello ' + 'world!" + i + "'", "");
-					String result = context.runScript("debugger; 'henk'", "");
-					logger.debug(result);
-				}
-			});
-			thread.start();
-			threads.add(thread);
-		}
-		
-		for(Thread t : threads) {
-			t.join();
-		}
+//
+//		DebugServer debugServer = DebugServer.start(9999);
+//
+//		V8Isolate isolate = V8.createIsolate(null);
+//		debugServer.attachIsolate(isolate);
+//
+//		List<Thread> threads = new ArrayList<>();
+//		for (int i = 0; i < 2; i++) {
+//			Thread thread = new Thread(() -> {
+//				try (V8Context context = isolate.createContext("default")) {
+////				V8Value result = context.runScript("'Hello ' + 'world!" + i + "'", "");
+//					String result = context.runScript("debugger; 'henk'", "");
+//					logger.debug(result);
+//				}
+//			});
+//			thread.start();
+//			threads.add(thread);
+//		}
+//
+//		for(Thread t : threads) {
+//			t.join();
+//		}
 	}
 
 }
