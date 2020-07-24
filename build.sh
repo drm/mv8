@@ -8,14 +8,26 @@ V8_VERSION=8.6.211
 
 V8_HOME="${V8_HOME:-"$(cd ~/git/v8 && pwd)"}"
 V8_BUILD_RELEASE="${V8_BUILD_RELEASE:-"x64.release.sample"}"
-JAVA_HOME="${JAVA_HOME:-"$(java -XshowSettings:properties -version 2>&1 > /dev/null | grep 'java.home' | grep -oE '\S+$')"}"
+JAVA_HOME="${JAVA_HOME:-"$(java -XshowSettings:properties -version 2>&1 >/dev/null | grep 'java.home' | grep -oE '\S+$')"}"
+V8_MONOLITH="${V8_MONOLITH:-"$V8_HOME/out.gn/${V8_BUILD_RELEASE}/obj/libv8_monolith.a"}"
 
 JAVAC="${JAVA_HOME}/bin/javac"
 V8_INCLUDE="${V8_HOME}/include"
-V8_OBJ="$V8_HOME/out.gn/${V8_BUILD_RELEASE}/obj"
+
+if ! [ -f "${V8_MONOLITH}" ]; then
+	read -p "${V8_MONOLITH} not found. Try building it? [y/N] " CONT
+	[ "$CONT" == "y" ] || [ "$CONT" == "Y" ] || echo "Aborting..." && exit
+	(
+		#
+		cd $V8_HOME
+		git checkout "$V8_VERSION"
+		tools/dev/v8gen.py "${V8_BUILD_RELEASE}"
+		ninja -C out.gn/${V8_BUILD_RELEASE} v8_monolith
+	)
+fi
 
 mkdir -p bin
-$JAVAC -cp "lib/*" $(find src -name "*.java") -d bin -h src/main/cpp;
+$JAVAC -cp "lib/*" $(find src -name "*.java") -d bin -h src/main/cpp
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	JAVA_INCLUDES="-I$JAVA_HOME/include -I$JAVA_HOME/include/linux"
@@ -31,7 +43,7 @@ g++ -shared -I"${V8_INCLUDE}" $JAVA_INCLUDES \
 	-DV8_COMPRESS_POINTERS \
 	src/main/cpp/mv8.cpp \
 	-o $OUTPUT_FILE \
-	-Wl,$V8_OBJ/libv8_monolith.a \
+	-Wl,$V8_MONOLITH \
 	-ldl -pthread -std=c++11 -fPIC
 
 echo -e "\n\nDone.\nDon't forget to run \`./test.sh\` to see if everything works.\n"
