@@ -175,19 +175,6 @@ private:
 	jobject v8Isolate_;
 };
 
-class ShellArrayBufferAllocator : public v8::ArrayBuffer::Allocator
-{
-public:
-	virtual void *Allocate(size_t length)
-	{
-		void *data = AllocateUninitialized(length);
-		return data == NULL ? data : memset(data, 0, length);
-	}
-	virtual void *AllocateUninitialized(size_t length) { return malloc(length); }
-	virtual void Free(void *data, size_t) { free(data); }
-};
-
-ShellArrayBufferAllocator array_buffer_allocator;
 void runScriptInContext(v8::Isolate* isolate, v8::Local<v8::Context> context, const char* utf8_source, const char* name, Local<Value> * result, Local<Value> * exception);
 
 static void javaCallback(const v8::FunctionCallbackInfo<v8::Value> &args)
@@ -261,11 +248,10 @@ JNIEXPORT jlong JNICALL Java_com_mv8_V8__1createIsolate(JNIEnv *env, jclass V8, 
 		isolateData->startupData.data = buf;
 		isolateData->startupData.raw_size = env->GetArrayLength(snapshotBlobGlobal);
 
-		// isolateData->startupData = v8::V8::CreateSnapshotDataBlob(nativeString);
 		create_params.snapshot_blob = &isolateData->startupData;
 	}
 
-	create_params.array_buffer_allocator = &array_buffer_allocator;
+	create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 	isolateData->isolate = v8::Isolate::New(create_params);
 	Isolate *isolate = isolateData->isolate;
 	v8::Isolate::Scope isolate_scope(isolate);
@@ -488,8 +474,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 	}
 
 	v8::V8::InitializeICU();
-	V8::InitializeExternalStartupData(".");
-
+	v8::V8::InitializeExternalStartupData(".");
 	v8Platform = v8::platform::NewDefaultPlatform();
 	v8::V8::InitializePlatform(v8Platform.get());
 	v8::V8::Initialize();
