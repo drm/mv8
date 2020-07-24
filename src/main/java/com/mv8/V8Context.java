@@ -40,6 +40,4 @@ public class V8Context implements AutoCloseable {
 		closed = true;
 		_dispose(isolatePtr, ptr);
 	}
-
-
 }

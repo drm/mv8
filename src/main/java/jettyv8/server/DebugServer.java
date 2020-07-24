@@ -30,12 +30,12 @@ public class DebugServer {
 	static Logger logger = LoggerFactory.getLogger(DebugServer.class);
 	private Server server;
 	private ServletContextHandler handler;
-	private List<IsolateMetadata> isolatesMetaData = new ArrayList<>();
+	private final List<IsolateMetadata> isolatesMetaData = new ArrayList<>();
 	private int port;
 	
 	class DebugSocketServlet implements InspectorCallbacks {
-		private V8Isolate isolate;
-		private LinkedBlockingQueue<String> messagesFromInspectorFrontEnd = new LinkedBlockingQueue<>();
+		private final V8Isolate isolate;
+		private final LinkedBlockingQueue<String> messagesFromInspectorFrontEnd = new LinkedBlockingQueue<>();
 		
 		private Session session;
 		
@@ -131,7 +131,7 @@ public class DebugServer {
 		handler.setContextPath("/");
 		server.setHandler(handler);
 		
-		ServletHolder metadataServletHolder = new ServletHolder(new MetadataServlet(() -> this.getIsolatesMetaData()));
+		ServletHolder metadataServletHolder = new ServletHolder(new MetadataServlet(this::getIsolatesMetaData));
 		
 		handler.addServlet(metadataServletHolder, "/json");
 		handler.addServlet(metadataServletHolder, "/json/list");
