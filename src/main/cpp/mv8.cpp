@@ -244,8 +244,20 @@ JNIEXPORT jbyteArray JNICALL Java_com_mv8_V8__1createStartupDataBlob(JNIEnv * en
 		Local<Value> exception;
 		runScriptInContext(isolate, context, nativeString, "<embedded>", &result, &exception);
 		snapshot_creator->SetDefaultContext(context, NULL);
+		if (!exception.IsEmpty()) {
+			v8::Object* object = v8::Object::Cast(*exception);
+
+			MaybeLocal<Value> stack = object->Get(context, v8::String::NewFromOneByte(isolate, (const uint8_t *)"stack", v8::NewStringType::kNormal).ToLocalChecked());
+			String::Value unicodeString(isolate, exception->ToString(context).ToLocalChecked());
+			String::Value stackAsString(isolate, stack.ToLocalChecked());
+			jobject javaException = env->NewObject(v8ExceptionCls, v8ExceptionConstructorMethodID,
+				env->NewString(*unicodeString, unicodeString.length()),
+				env->NewString(*stackAsString, stackAsString.length()));
+			env->Throw((jthrowable)javaException);
+			return NULL;
+		}
 	}
-	StartupData startupData = snapshot_creator->CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kClear);
+	StartupData startupData = snapshot_creator->CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kKeep);
 	jbyteArray ret = env->NewByteArray(startupData.raw_size);
 	env->SetByteArrayRegion(ret, 0, startupData.raw_size, (const jbyte *)startupData.data);
 	return ret;
@@ -353,11 +365,10 @@ JNIEXPORT jstring JNICALL Java_com_mv8_V8Context__1runScript(JNIEnv *env, jclass
 	if (!exception.IsEmpty()) {
 		v8::Object* object = v8::Object::Cast(*exception);
 
-
 		MaybeLocal<Value> stack = object->Get(context, v8::String::NewFromOneByte(isolate, (const uint8_t *)"stack", v8::NewStringType::kNormal).ToLocalChecked());
 		String::Value unicodeString(isolate, exception->ToString(context).ToLocalChecked());
 		String::Value stackAsString(isolate, stack.ToLocalChecked());
-		jobject javaException = env->NewObject(v8ExceptionCls, v8ExceptionConstructorMethodID, 
+		jobject javaException = env->NewObject(v8ExceptionCls, v8ExceptionConstructorMethodID,
 			env->NewString(*unicodeString, unicodeString.length()),
 			env->NewString(*stackAsString, stackAsString.length()));
 		env->Throw((jthrowable)javaException);
