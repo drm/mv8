@@ -63,4 +63,20 @@ public class ExceptionHandlingTest {
 			}
 		}
 	}
+
+	@Test
+	public void testJavaException() throws Exception {
+		try (	V8Isolate isolate = V8.createIsolate(null);
+				 V8Context context = isolate.createContext("default")) {
+			try {
+				context.setCallback((x) -> {
+					throw new RuntimeException("Baaaad!");
+				});
+				context.runScript("__calljava(\"\"); throw Error('Fail!');", "");
+				Assert.fail();
+			} catch (RuntimeException expected) {
+				Assert.assertEquals("Baaaad!", expected.getMessage());
+			}
+		}
+	}
 }

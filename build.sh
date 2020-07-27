@@ -38,4 +38,6 @@ g++ -shared -I"${V8_INCLUDE}" $JAVA_INCLUDES \
 	-Wl,$V8_MONOLITH \
 	-ldl -pthread -std=c++11 -fPIC
 
+(cd bin && jar cf ../mv8.jar $(find . -name "*.class"))
+
 echo -e "\n\nDone.\nDon't forget to run \`./test.sh\` to see if everything works.\n"

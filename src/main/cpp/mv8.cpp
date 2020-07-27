@@ -205,12 +205,30 @@ static void javaCallback(const v8::FunctionCallbackInfo<v8::Value> &args)
 	String::Value unicodeString(isolate, args[0]->ToString(context).ToLocalChecked());
 	jstring javaString = env->NewString(*unicodeString, unicodeString.length());
 	jobject result = env->CallObjectMethod(javaInstance, v8CallJavaMethodID, javaString);
+	jboolean hasException = env->ExceptionCheck();
+	if (hasException) {
+		jthrowable e = env->ExceptionOccurred();
+		env->ExceptionClear(); // clears the exception; e seems to remain valid
 
-	const uint16_t *resultString = env->GetStringChars((jstring)result, NULL);
-	int length = env->GetStringLength((jstring)result);
-	Local<String> str = String::NewFromTwoByte(isolate, resultString, NewStringType::kNormal, length).ToLocalChecked();
-	env->ReleaseStringChars((jstring)result, resultString);
-	args.GetReturnValue().Set(str);
+		// TODO globalize like other refs?
+		jclass clazz = env->GetObjectClass(e);
+		jmethodID getMessage = env->GetMethodID(clazz, "getMessage", "()Ljava/lang/String;");
+		jstring message = (jstring)env->CallObjectMethod(e, getMessage);
+		const char *mstr = env->GetStringUTFChars(message, NULL);
+		// do whatever with mstr
+		isolate->ThrowException(String::NewFromUtf8(isolate, mstr).ToLocalChecked());
+
+		env->ReleaseStringUTFChars(message, mstr);
+		env->DeleteLocalRef(message);
+		env->DeleteLocalRef(clazz);
+		env->DeleteLocalRef(e);
+	} else {
+		const uint16_t *resultString = env->GetStringChars((jstring)result, NULL);
+		int length = env->GetStringLength((jstring)result);
+		Local<String> str = String::NewFromTwoByte(isolate, resultString, NewStringType::kNormal, length).ToLocalChecked();
+		env->ReleaseStringChars((jstring)result, resultString);
+		args.GetReturnValue().Set(str);
+	}
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_mv8_V8__1createStartupDataBlob(JNIEnv * env, jclass v8, jstring scriptSource, jstring fileName) {
@@ -473,7 +491,8 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
 		return onLoad_err;
 	}
 
-	v8::V8::InitializeICU();
+//	v8::V8::InitializeICU();
+	v8::V8::InitializeICUDefaultLocation(".");
 	v8::V8::InitializeExternalStartupData(".");
 	v8Platform = v8::platform::NewDefaultPlatform();
 	v8::V8::InitializePlatform(v8Platform.get());

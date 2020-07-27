@@ -40,7 +40,8 @@ public class PerformanceTest {
 		
 		String warmUp = "ReactDOMServer.renderToStaticMarkup(React.createElement(\"body\"))";
 		
-		byte[] startupData = V8.createStartupDataBlob(reactJs + "\n" + warmUp, "<embedded>");
+//		byte[] startupData = V8.createStartupDataBlob(reactJs + "\n" + warmUp, "<embedded>");
+		byte[] startupData = V8.createStartupDataBlob(reactJs, "<embedded>");
 		System.out.println("startup data size: " + startupData.length);
 		
 		try (V8Isolate isolate = V8.createIsolate(startupData);) {
@@ -49,6 +50,8 @@ public class PerformanceTest {
 					try (V8Context context = isolate.createContext("hello");) {
 //					System.out.println("i = " + i);
 					context.runScript("'Hello ' + 'world!'", "");
+					System.out.println(context.runScript("ReactDOMServer.renderToStaticMarkup(React.createElement(\"body\"))", ""));
+
 //					logger.info(result.getStringValue());
 					}
 				}

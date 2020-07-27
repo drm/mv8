@@ -23,7 +23,7 @@ public class InspectorThreadsTest {
 //		V8Isolate isolate = V8.createIsolate(null);
 //		debugServer.attachIsolate(isolate);
 //
-//		List<Thread> threads = new ArrayList<>();
+//		List<Thread> threads = new ArrayList<>();n
 //		for (int i = 0; i < 2; i++) {
 //			Thread thread = new Thread(() -> {
 //				try (V8Context context = isolate.createContext("default")) {
@@ -40,5 +40,4 @@ public class InspectorThreadsTest {
 //			t.join();
 //		}
 	}
-
 }
