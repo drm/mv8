@@ -79,25 +79,10 @@ private:
 
 	void Send(const v8_inspector::StringView &string)
 	{
-		// v8::Isolate::AllowJavascriptExecutionScope allow_script(isolateData_->isolate);
 		int length = static_cast<int>(string.length());
-		// DCHECK_LT(length, v8::String::kMaxLength);
-		// v8::Local<v8::String> message =
-		// 	(string.is8Bit()
-		// 		 ? v8::String::NewFromOneByte(
-		// 			   isolateData_->isolate,
-		// 			   reinterpret_cast<const uint8_t *>(string.characters8()),
-		// 			   v8::NewStringType::kNormal, length)
-		// 		 : v8::String::NewFromTwoByte(
-		// 			   isolateData_->isolate,
-		// 			   reinterpret_cast<const uint16_t *>(string.characters16()),
-		// 			   v8::NewStringType::kNormal, length))
-		// 		.ToLocalChecked();
-
 		JNIEnv *env;
 		getJNIEnv(env);
-		// v8::String::Value unicodeString(isolateData_->isolate, message);
-		jstring javaString = 
+		jstring javaString =
 			(string.is8Bit() ?
 				env->NewStringUTF("henk")
 				:
@@ -176,6 +161,16 @@ private:
 };
 
 void runScriptInContext(v8::Isolate* isolate, v8::Local<v8::Context> context, const char* utf8_source, const char* name, Local<Value> * result, Local<Value> * exception);
+
+static void writeStdout(const v8::FunctionCallbackInfo<v8::Value> &args) {
+	Isolate *isolate = args.GetIsolate();
+	Local<Context> context = isolate->GetCurrentContext();
+	HandleScope scope(isolate);
+
+  	v8::String::Utf8Value str(isolate, args[0]);
+    std::string cppStr(*str);
+	std::cout << cppStr << std::endl;
+}
 
 static void javaCallback(const v8::FunctionCallbackInfo<v8::Value> &args)
 {
@@ -289,6 +284,7 @@ JNIEXPORT jlong JNICALL Java_com_mv8_V8__1createIsolate(JNIEnv *env, jclass V8, 
 
 	Handle<ObjectTemplate> globalObject = ObjectTemplate::New(isolate);
 	globalObject->Set(String::NewFromUtf8(isolate, "__calljava", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, javaCallback));
+	globalObject->Set(String::NewFromUtf8(isolate, "__print", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, writeStdout));
 	isolateData->globalObjectTemplate = new Persistent<ObjectTemplate>(isolate, globalObject);
 
 	jobject instanceRef = env->NewGlobalRef(V8Isolate);

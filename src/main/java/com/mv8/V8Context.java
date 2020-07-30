@@ -26,6 +26,7 @@ public class V8Context implements AutoCloseable {
 	}
 
 	public String __calljava(String message) {
+		System.out.println("got message from v8: " + message);
 		if (callback == null) {
 			throw new RuntimeException("No callback set");
 		}
