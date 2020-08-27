@@ -42,5 +42,6 @@ g++ -shared -I"${V8_INCLUDE}" $JAVA_INCLUDES \
 	-ldl -pthread -std=c++11 -fPIC
 
 (cd bin && jar cf ../out/mv8-$VERSION.jar $(find . -name "*.class"))
+ln -sf out/libmv8-$VERSION.so ./libmv8.so
 
 echo -e "\n\nDone.\nDon't forget to run \`./test.sh\` to see if everything works.\n"

@@ -200,10 +200,9 @@ static void javaCallback(const v8::FunctionCallbackInfo<v8::Value> &args)
 	String::Value unicodeString(isolate, args[0]->ToString(context).ToLocalChecked());
 	jstring javaString = env->NewString(*unicodeString, unicodeString.length());
 	jobject result = env->CallObjectMethod(javaInstance, v8CallJavaMethodID, javaString);
-	jboolean hasException = env->ExceptionCheck();
-	if (hasException) {
+
+	if (env->ExceptionCheck() == JNI_TRUE) {
 		jthrowable e = env->ExceptionOccurred();
-		env->ExceptionClear(); // clears the exception; e seems to remain valid
 
 		// TODO globalize like other refs?
 		jclass clazz = env->GetObjectClass(e);
@@ -213,6 +212,7 @@ static void javaCallback(const v8::FunctionCallbackInfo<v8::Value> &args)
 		// do whatever with mstr
 		isolate->ThrowException(String::NewFromUtf8(isolate, mstr).ToLocalChecked());
 
+		env->ExceptionClear(); // clear the exception, it's handled now.
 		env->ReleaseStringUTFChars(message, mstr);
 		env->DeleteLocalRef(message);
 		env->DeleteLocalRef(clazz);
@@ -224,11 +224,16 @@ static void javaCallback(const v8::FunctionCallbackInfo<v8::Value> &args)
 		env->ReleaseStringChars((jstring)result, resultString);
 		args.GetReturnValue().Set(str);
 	}
+
+	// cleanup local refs, otherwise JNI will only clean this up after the JNI invocation is finished causing
+	// memory issues with long-lived scripts.
+	env->DeleteLocalRef(javaString);
+	env->DeleteLocalRef(result);
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_mv8_V8__1createStartupDataBlob(JNIEnv * env, jclass v8, jstring scriptSource, jstring fileName) {
 	jstring snapshotBlobGlobal = (jstring)env->NewGlobalRef(scriptSource);
-	const char * nativeString = env->GetStringUTFChars(scriptSource, NULL); // Note: GetStringUTF8Chars does not support emoji's
+	const char *nativeString = env->GetStringUTFChars(scriptSource, NULL); // Note: GetStringUTF8Chars does not support emoji's
 
 	SnapshotCreator * snapshot_creator = new SnapshotCreator();
 	v8::Isolate* isolate = snapshot_creator->GetIsolate();
@@ -252,6 +257,8 @@ JNIEXPORT jbyteArray JNICALL Java_com_mv8_V8__1createStartupDataBlob(JNIEnv * en
 			return NULL;
 		}
 	}
+	env->ReleaseStringUTFChars(scriptSource, nativeString);
+
 	StartupData startupData = snapshot_creator->CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kKeep);
 	jbyteArray ret = env->NewByteArray(startupData.raw_size);
 	env->SetByteArrayRegion(ret, 0, startupData.raw_size, (const jbyte *)startupData.data);

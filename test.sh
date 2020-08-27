@@ -5,14 +5,19 @@ JAVA="${JAVA_HOME}/bin/java"
 
 set -e -x -u
 
-tests="$(
-	cd bin && \
-	find -name "*Test.class" \
-		| while read f; do echo "$f"| sed 's!^./\|\.class$!!g' | sed 's!/!.!g'; done;
-)"
+if [ "$@" == "" ]; then
+	tests="$(
+		cd bin && \
+		find -name "*Test.class" \
+			| while read f; do echo "$f"| sed 's!^./\|\.class$!!g' | sed 's!/!.!g'; done;
+	)"
+else
+	tests="$@"
+fi
 
 $JAVA \
+	-Xmx512M -Xms512M \
 	-cp "lib/*:bin/:src/" \
 	-Djava.library.path="." \
 	org.junit.runner.JUnitCore \
-	$tests
+	$@
