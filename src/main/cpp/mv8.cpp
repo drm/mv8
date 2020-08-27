@@ -23,6 +23,7 @@
 using namespace std;
 using namespace v8;
 
+
 void getJNIEnv(JNIEnv *&env);
 
 std::unique_ptr<v8::Platform> v8Platform;
@@ -229,6 +230,15 @@ static void javaCallback(const v8::FunctionCallbackInfo<v8::Value> &args)
 	// memory issues with long-lived scripts.
 	env->DeleteLocalRef(javaString);
 	env->DeleteLocalRef(result);
+}
+
+JNIEXPORT void JNICALL Java_com_mv8_V8__1setFlags
+  (JNIEnv *env, jclass jcls, jstring flags)
+{
+	const char *flagsCstring = env->GetStringUTFChars(flags, NULL); // Note: GetStringUTF8Chars does not support emoji's
+	V8::SetFlagsFromString(flagsCstring);
+	std::cout << "Setting v8 flags: " << flagsCstring << std::endl;
+	env->ReleaseStringUTFChars(flags, flagsCstring); // Note: GetStringUTF8Chars does not support emoji's
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_mv8_V8__1createStartupDataBlob(JNIEnv * env, jclass v8, jstring scriptSource, jstring fileName) {

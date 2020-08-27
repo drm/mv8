@@ -5,6 +5,10 @@ public class V8 {
 		System.loadLibrary("mv8");
 	}
 
+	public static void setFlags(String s) {
+		_setFlags(s);
+	}
+
 	public static V8Isolate createIsolate() {
 		return createIsolate(null);
 	}
@@ -19,6 +23,7 @@ public class V8 {
 		return _createStartupDataBlob(source, scriptName);
 	}
 
+	private static native void _setFlags(String s);
 	private static native long _createIsolate(V8Isolate isolate, byte[] snapshotBlob);
 	private static native byte[] _createStartupDataBlob(String source, String scriptName);
 }

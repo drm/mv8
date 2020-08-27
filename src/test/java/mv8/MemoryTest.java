@@ -10,6 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MemoryTest {
 	@Test
 	public void test() throws Exception {
+		V8.setFlags("--max_old_space_size=1024 --max_semi_space_size=512 --trace-gc-object-stats --trace-gc --trace-gc-nvp");
+
 		if (Runtime.getRuntime().maxMemory() > 512 * 1024 * 1024) {
 			throw new AssertionError("You will need to set -Xmx512M to run this test effectively");
 		}

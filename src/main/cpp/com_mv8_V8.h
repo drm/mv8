@@ -9,6 +9,14 @@ extern "C" {
 #endif
 /*
  * Class:     com_mv8_V8
+ * Method:    _setFlags
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_com_mv8_V8__1setFlags
+  (JNIEnv *, jclass, jstring);
+
+/*
+ * Class:     com_mv8_V8
  * Method:    _createIsolate
  * Signature: (Lcom/mv8/V8Isolate;[B)J
  */
