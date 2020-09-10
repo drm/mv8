@@ -5,10 +5,10 @@ JAVA="${JAVA_HOME}/bin/java"
 
 set -e -x -u
 
-if [ "$@" == "" ]; then
+if [[ "$@" == "" ]]; then
 	tests="$(
 		cd bin && \
-		find -name "*Test.class" \
+		find . -name "*Test.class" \
 			| while read f; do echo "$f"| sed 's!^./\|\.class$!!g' | sed 's!/!.!g'; done;
 	)"
 else

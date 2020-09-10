@@ -11,12 +11,12 @@ source $(cd $(dirname "$0") && pwd)/build_vars.sh
 
 if ! [ -f "${V8_MONOLITH}" ]; then
 	read -p "${V8_MONOLITH} not found. Try building it? [y/N] " CONT
-	[ "$CONT" == "y" ] || [ "$CONT" == "Y" ] || echo "Aborting..." && exit
+	#[ "$CONT" == "y" ] || [ "$CONT" == "Y" ] || echo "Aborting..." && exit
 	(
 		#
 		cd $V8_HOME
 		git checkout "$V8_VERSION"
-		tools/dev/v8gen.py "${V8_BUILD_RELEASE}"
+		tools/dev/v8gen.py -vv "${V8_BUILD_RELEASE}"
 		ninja -C out.gn/${V8_BUILD_RELEASE} v8_monolith
 	)
 fi
@@ -43,5 +43,6 @@ g++ -shared -I"${V8_INCLUDE}" $JAVA_INCLUDES \
 
 (cd bin && jar cf ../out/mv8-$VERSION.jar $(find . -name "*.class"))
 ln -sf out/libmv8-$VERSION.so ./libmv8.so
+ln -sf out/libmv8-$VERSION.dylib ./libmv8.dylib
 
 echo -e "\n\nDone.\nDon't forget to run \`./test.sh\` to see if everything works.\n"
