@@ -210,10 +210,11 @@ static void javaCallback(const v8::FunctionCallbackInfo<v8::Value> &args)
 		jmethodID getMessage = env->GetMethodID(clazz, "getMessage", "()Ljava/lang/String;");
 		jstring message = (jstring)env->CallObjectMethod(e, getMessage);
 		const char *mstr = env->GetStringUTFChars(message, NULL);
-		// do whatever with mstr
 		isolate->ThrowException(String::NewFromUtf8(isolate, mstr).ToLocalChecked());
 
 		env->ExceptionClear(); // clear the exception, it's handled now.
+
+		// release local data explicitly to avoid hogging memory in long-lived scripts
 		env->ReleaseStringUTFChars(message, mstr);
 		env->DeleteLocalRef(message);
 		env->DeleteLocalRef(clazz);
@@ -226,8 +227,7 @@ static void javaCallback(const v8::FunctionCallbackInfo<v8::Value> &args)
 		args.GetReturnValue().Set(str);
 	}
 
-	// cleanup local refs, otherwise JNI will only clean this up after the JNI invocation is finished causing
-	// memory issues with long-lived scripts.
+	// release local data explicitly to avoid hogging memory in long-lived scripts
 	env->DeleteLocalRef(javaString);
 	env->DeleteLocalRef(result);
 }
@@ -253,6 +253,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_mv8_V8__1createStartupDataBlob(JNIEnv * en
 		Local<Value> result;
 		Local<Value> exception;
 		runScriptInContext(isolate, context, nativeString, "<embedded>", &result, &exception);
+
 		snapshot_creator->SetDefaultContext(context, NULL);
 		if (!exception.IsEmpty()) {
 			v8::Object* object = v8::Object::Cast(*exception);
