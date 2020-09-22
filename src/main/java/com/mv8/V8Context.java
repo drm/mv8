@@ -29,7 +29,7 @@ public class V8Context implements AutoCloseable {
 		if (callback == null) {
 			throw new RuntimeException("No callback set");
 		}
-		return callback.call(message);
+		return callback.call(this, message);
 	}
 
 	private static native String _runScript(long isolatePtr, long contextPtr, String script, String scriptName);

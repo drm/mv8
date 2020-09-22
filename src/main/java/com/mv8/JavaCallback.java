@@ -1,5 +1,5 @@
 package com.mv8;
 
 public interface JavaCallback {
-	String call(String args);
+	String call(V8Context currentContext, String args);
 }

@@ -3,7 +3,12 @@ package mv8;
 import com.mv8.V8;
 import com.mv8.V8Context;
 import com.mv8.V8Isolate;
+import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class CallbackTest {
 	@Test
@@ -30,11 +35,51 @@ public class CallbackTest {
 		try (V8Isolate isolate = V8.createIsolate();
 			 V8Context context = isolate.createContext("foo")
 		) {
-			context.setCallback((str) -> {
+			context.setCallback((ctx, str) -> {
 				throw new RuntimeException("Foo!");
 			});
 
 			context.runScript("__calljava(\"\");", "");
+		}
+	}
+
+
+	@Test
+	public void testPingPong() throws Exception {
+		try (V8Isolate isolate = V8.createIsolate();
+			 V8Context context = isolate.createContext("foo")
+		) {
+			// repeat to check scoping problems.
+			for (int j = 0; j < 2; j ++) {
+				final AtomicInteger n = new AtomicInteger(0);
+				final List<String> s = new LinkedList<>();
+
+				context.setCallback((ctx, str) -> {
+					s.add(str);
+					if (str.equals("")) {
+						for (int i = 0; i < 10; i ++) {
+							ctx.runScript("__iterator(" + n.getAndIncrement() + ")", "<iterator>");
+						}
+					}
+
+					return "";
+				});
+
+				context.runScript("function __iterator(n) { " +
+					"		__calljava(\"\" + n); " +
+					"	};", "");
+				context.runScript(
+					"(() => { " +
+						"	__calljava(\"\");" +
+						"})();",
+					""
+				);
+
+				Assert.assertEquals(11, s.size());
+				Assert.assertEquals("", s.get(0));
+				Assert.assertEquals("0", s.get(1));
+				Assert.assertEquals("9", s.get(10));
+			}
 		}
 	}
 }

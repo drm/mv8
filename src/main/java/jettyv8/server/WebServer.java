@@ -49,7 +49,7 @@ public class WebServer {
 					InspectableIsolate socket = debugServer.attachIsolate(isolate);
 					V8Context context = isolate.createContext(contextName);) {
 				
-				context.setCallback((payload) -> {
+				context.setCallback((ctx, payload) -> {
 					logger.debug("Got callback with payload: " + payload);
 					return "";
 				});

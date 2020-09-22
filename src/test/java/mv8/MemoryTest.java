@@ -24,7 +24,7 @@ public class MemoryTest {
 				ctx.runScript("const str = \"Hello world\".repeat(1_000_000);", "");
 				AtomicInteger n = new AtomicInteger(0);
 				final int ii = i;
-				ctx.setCallback((str) -> {
+				ctx.setCallback((c, str) -> {
 					try {
 						if (str.charAt(0) != 'H') {
 							throw new AssertionError("Expected first char to be 'H'");

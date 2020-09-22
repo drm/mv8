@@ -79,7 +79,7 @@ public class PerformanceTest {
 				V8Context context = isolate.createContext("doit");
 				) {
 		
-			JavaCallback cb = command -> {
+			JavaCallback cb = (ctx, command) -> {
 				if (command.startsWith("print:")) {
 					logger.debug(command.substring("print:".length()));
 				}
@@ -103,7 +103,7 @@ public class PerformanceTest {
 		V8Isolate isolate = V8.createIsolate(startupData);
 		
 		V8Context context = isolate.createContext("doit");
-		JavaCallback cb = command -> {
+		JavaCallback cb = (ctx, command) -> {
 			if (command.startsWith("print:")) {
 				logger.debug(command.substring("print:".length()));
 			}

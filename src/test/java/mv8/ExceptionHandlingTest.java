@@ -69,7 +69,7 @@ public class ExceptionHandlingTest {
 		try (	V8Isolate isolate = V8.createIsolate(null);
 				 V8Context context = isolate.createContext("default")) {
 			try {
-				context.setCallback((x) -> {
+				context.setCallback((ctx, x) -> {
 					throw new RuntimeException("Baaaad!");
 				});
 				context.runScript("__calljava(\"\"); throw Error('Fail!');", "");
