@@ -19,7 +19,6 @@
 using namespace std;
 using namespace v8;
 
-
 void getJNIEnv(JNIEnv *&env);
 
 std::unique_ptr<v8::Platform> v8Platform;
@@ -340,6 +339,8 @@ JNIEXPORT jlong JNICALL Java_com_mv8_V8Isolate__1createContext(JNIEnv *env, jcla
 {
 	V8IsolateData *isolateData = reinterpret_cast<V8IsolateData *>(isolatePtr);
 	Isolate *isolate = isolateData->isolate;
+	v8::Locker locker(isolate);
+
 	v8::Isolate::Scope isolate_scope(isolate);
 	HandleScope handle_scope(isolate);
 
@@ -361,6 +362,7 @@ JNIEXPORT jlong JNICALL Java_com_mv8_V8Isolate__1createContext(JNIEnv *env, jcla
 }
 
 void runScriptInContext(v8::Isolate* isolate, v8::Local<v8::Context> context, const char* utf8_source, const char* name, Local<Value> *result, Local<Value> *exception) {
+	v8::Locker locker(isolate);
 	v8::Context::Scope context_scope(context);
 	TryCatch try_catch(isolate);
 

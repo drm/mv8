@@ -3,8 +3,17 @@ package com.mv8;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class V8Isolate implements AutoCloseable {
 	static Logger logger = LoggerFactory.getLogger(V8Isolate.class);
+
+	final private static Map<Long, V8Isolate> refMap = new HashMap<>();
+
+	protected static V8Isolate getIsolate(long ptr) {
+		return refMap.get(ptr);
+	}
 	
 	private long isolatePtr;
 	private InspectorCallbacks inspectorCallbacks;
@@ -14,9 +23,10 @@ public class V8Isolate implements AutoCloseable {
 	
 	public void init(long isolatePtr) {
 		this.isolatePtr = isolatePtr;
+		refMap.put(this.isolatePtr, this);
 	}
 
-	public V8Context createContext(String contextName) {
+	public synchronized V8Context createContext(String contextName) {
 		V8Context context = new V8Context(isolatePtr);
 		context.init(_createContext(isolatePtr, context, contextName));
 		return context;
@@ -77,6 +87,6 @@ public class V8Isolate implements AutoCloseable {
 	@Override
 	public void close() throws Exception {
 		_dispose(isolatePtr);
+		refMap.remove(isolatePtr);
 	}
-
 }

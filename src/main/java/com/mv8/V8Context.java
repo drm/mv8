@@ -22,7 +22,9 @@ public class V8Context implements AutoCloseable {
 		if (closed) {
 			throw new RuntimeException("context closed");
 		}
-		return _runScript(isolatePtr, ptr, script, scriptName);
+		synchronized (V8Isolate.getIsolate(isolatePtr)) {
+			return _runScript(isolatePtr, ptr, script, scriptName);
+		}
 	}
 
 	public String __calljava(String message) {
