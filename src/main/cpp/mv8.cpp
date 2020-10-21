@@ -169,6 +169,33 @@ static void writeStdout(const v8::FunctionCallbackInfo<v8::Value> &args) {
 	std::cout << cppStr << std::endl;
 }
 
+static void getHeapStats(const v8::FunctionCallbackInfo<v8::Value> &args) {
+	Isolate* isolate = args.GetIsolate();
+	HeapStatistics v8_heap_stats;
+	isolate->GetHeapStatistics(&v8_heap_stats);
+
+	Local<Context> context = isolate->GetCurrentContext();
+	Local<Object> stats = Object::New(isolate);
+
+	v8::Maybe<bool> // note: weird construction here to keep code aligned; this is a declaration ...
+	v = stats->Set(context, String::NewFromUtf8(isolate, "does_zap_garbage", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.does_zap_garbage()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "external_memory", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.external_memory()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "heap_size_limit", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.heap_size_limit()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "malloced_memory", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.malloced_memory()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "number_of_detached_contexts", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.number_of_detached_contexts()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "number_of_native_contexts", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.number_of_native_contexts()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "peak_malloced_memory", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.peak_malloced_memory()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "total_available_size", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.total_available_size()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "total_global_handles_size", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.total_global_handles_size()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "total_heap_size", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.total_heap_size()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "total_heap_size_executable", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.total_heap_size_executable()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "total_physical_size", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.total_physical_size()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "used_global_handles_size", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.used_global_handles_size()));
+	v = stats->Set(context, String::NewFromUtf8(isolate, "used_heap_size", NewStringType::kNormal).ToLocalChecked(), v8::Integer::New(isolate, v8_heap_stats.used_heap_size()));
+
+	args.GetReturnValue().Set(stats);
+}
+
 static void javaCallback(const v8::FunctionCallbackInfo<v8::Value> &args)
 {
 	if (args.Length() < 1)
@@ -299,6 +326,7 @@ JNIEXPORT jlong JNICALL Java_com_mv8_V8__1createIsolate(JNIEnv *env, jclass V8, 
 	Handle<ObjectTemplate> globalObject = ObjectTemplate::New(isolate);
 	globalObject->Set(String::NewFromUtf8(isolate, "__calljava", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, javaCallback));
 	globalObject->Set(String::NewFromUtf8(isolate, "__print", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, writeStdout));
+	globalObject->Set(String::NewFromUtf8(isolate, "__heapstats", NewStringType::kNormal).ToLocalChecked(), FunctionTemplate::New(isolate, getHeapStats));
 	isolateData->globalObjectTemplate = new Persistent<ObjectTemplate>(isolate, globalObject);
 
 	jobject instanceRef = env->NewGlobalRef(V8Isolate);
