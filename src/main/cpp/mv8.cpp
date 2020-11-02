@@ -161,6 +161,7 @@ void runScriptInContext(v8::Isolate* isolate, v8::Local<v8::Context> context, co
 static void writeStdout(const v8::FunctionCallbackInfo<v8::Value> &args) {
 	Isolate *isolate = args.GetIsolate();
 	Local<Context> context = isolate->GetCurrentContext();
+	v8::Locker locker(isolate);
 	HandleScope scope(isolate);
 
   	v8::String::Utf8Value str(isolate, args[0]);
@@ -202,6 +203,7 @@ static void javaCallback(const v8::FunctionCallbackInfo<v8::Value> &args)
 
 	Isolate *isolate = args.GetIsolate();
 	Local<Context> context = isolate->GetCurrentContext();
+	v8::Locker locker(isolate);
 	HandleScope scope(isolate);
 
 	Local<External> data = Local<External>::Cast(context->GetEmbedderData(1));
@@ -270,6 +272,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_mv8_V8__1createStartupDataBlob(JNIEnv * en
 	SnapshotCreator * snapshot_creator = new SnapshotCreator();
 	v8::Isolate* isolate = snapshot_creator->GetIsolate();
 	{
+		v8::Locker locker(isolate);
 		v8::HandleScope scope(isolate);
 		v8::Local<v8::Context> context = v8::Context::New(isolate);
 		Local<Value> result;
@@ -320,6 +323,7 @@ JNIEXPORT jlong JNICALL Java_com_mv8_V8__1createIsolate(JNIEnv *env, jclass V8, 
 	isolateData->isolate = v8::Isolate::New(create_params);
 	Isolate *isolate = isolateData->isolate;
 	v8::Isolate::Scope isolate_scope(isolate);
+	v8::Locker locker(isolate);
 	HandleScope handle_scope(isolate);
 
 	Handle<ObjectTemplate> globalObject = ObjectTemplate::New(isolate);
@@ -339,9 +343,9 @@ JNIEXPORT jlong JNICALL Java_com_mv8_V8Isolate__1createContext(JNIEnv *env, jcla
 {
 	V8IsolateData *isolateData = reinterpret_cast<V8IsolateData *>(isolatePtr);
 	Isolate *isolate = isolateData->isolate;
-	v8::Locker locker(isolate);
 
 	v8::Isolate::Scope isolate_scope(isolate);
+	v8::Locker locker(isolate);
 	HandleScope handle_scope(isolate);
 
 	const uint16_t *contextNameString = env->GetStringChars(contextName, NULL);
@@ -388,6 +392,7 @@ JNIEXPORT jstring JNICALL Java_com_mv8_V8Context__1runScript(JNIEnv *env, jclass
 	V8IsolateData *isolateData = reinterpret_cast<V8IsolateData *>(isolatePtr);
 	Isolate *isolate = isolateData->isolate;
 	Isolate::Scope isolate_scope(isolate);
+	v8::Locker locker(isolate);
 	HandleScope handle_scope(isolate);
 
 	Persistent<Context> *persistentContext = reinterpret_cast<Persistent<Context> *>(contextPtr);
@@ -428,6 +433,7 @@ JNIEXPORT void JNICALL Java_com_mv8_V8Context__1dispose(JNIEnv *env, jclass, jlo
 	V8IsolateData *isolateData = reinterpret_cast<V8IsolateData *>(isolatePtr);
 	Isolate *isolate = isolateData->isolate;
 	Persistent<Context> *persistentContext = reinterpret_cast<Persistent<Context> *>(contextPtr);
+	v8::Locker locker(isolate);
 	HandleScope handle_scope(isolate);
 
 	Local<Context> context = persistentContext->Get(isolate);
@@ -460,6 +466,7 @@ JNIEXPORT jstring JNICALL Java_com_mv8_V8Value__1getStringValue(JNIEnv *env, jcl
 	Persistent<Context> *persistentContext = reinterpret_cast<Persistent<Context> *>(contextPtr);
 	Persistent<Value> *persistentValue = reinterpret_cast<Persistent<Value> *>(valuePtr);
 	Isolate::Scope isolate_scope(isolate);
+	v8::Locker locker(isolate);
 	HandleScope handle_scope(isolate);
 	Local<Value> v = persistentValue->Get(isolate);
 	if (v->IsString())
@@ -478,6 +485,7 @@ JNIEXPORT jlong JNICALL Java_com_mv8_V8Isolate__1createObjectTemplate(JNIEnv *, 
 	V8IsolateData *isolateData = reinterpret_cast<V8IsolateData *>(isolatePtr);
 	Isolate *isolate = isolateData->isolate;
 	Isolate::Scope isolate_scope(isolate);
+	v8::Locker locker(isolate);
 	HandleScope handle_scope(isolate);
 
 	Handle<ObjectTemplate> objectTemplate = ObjectTemplate::New(isolate);

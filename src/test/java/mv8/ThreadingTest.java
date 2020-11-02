@@ -39,7 +39,7 @@ public class ThreadingTest {
 		for (int i = 0; i < 10; i ++) {
 			s.submit(() -> {
 				try (V8Context c = isolate.createContext(Thread.currentThread().getName())) {
-//					c.runScript("__print(\"Hello from " + Thread.currentThread().getName() + "\")", "");
+					c.runScript("__print(\"Hello from " + Thread.currentThread().getName() + "\")", "");
 				}
 			});
 		}
