@@ -78,4 +78,20 @@ public class ThreadingTest {
 		s.awaitTermination(1, TimeUnit.SECONDS);
 		isolate.close();
 	}
+
+	@Test
+	public void testParallelExecutionInContext() throws Exception {
+		Thread.currentThread().setName("MAIN");
+		V8Isolate isolate = V8.createIsolate();
+		V8Context context = isolate.createContext("");
+
+		for (int i = 0; i < 10; i ++) {
+			s.submit(() -> {
+				context.runScript("__print(\"Hello from " + Thread.currentThread().getName() + "\")", "");
+			});
+		}
+
+		s.awaitTermination(1, TimeUnit.SECONDS);
+		isolate.close();
+	}
 }
