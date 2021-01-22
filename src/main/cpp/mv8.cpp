@@ -23,7 +23,6 @@
 using namespace std;
 using namespace v8;
 
-
 void getJNIEnv(JNIEnv *&env);
 
 std::unique_ptr<v8::Platform> v8Platform;
@@ -336,11 +335,11 @@ JNIEXPORT jlong JNICALL Java_com_mv8_V8Isolate__1createContext(JNIEnv *env, jcla
 	return reinterpret_cast<jlong>(persistentContext);
 }
 
-void runScriptInContext(v8::Isolate* isolate, v8::Local<v8::Context> context, const char* utf8_source, const char* name, Local<Value> *result, Local<Value> *exception) {
+void runScriptInContext(v8::Isolate* isolate, v8::Local<v8::Context> context, const char* utf8_source, int size, const char* name, Local<Value> *result, Local<Value> *exception) {
 	v8::Context::Scope context_scope(context);
 	TryCatch try_catch(isolate);
 
-	Local<String> source_string = String::NewFromUtf8(isolate, utf8_source, NewStringType::kNormal).ToLocalChecked();
+	Local<String> source_string = String::NewFromUtf8(isolate, utf8_source, NewStringType::kNormal, size).ToLocalChecked();
 	Local<String> resource_name = String::NewFromUtf8(isolate, name, NewStringType::kNormal).ToLocalChecked();
 
 	ScriptOrigin origin(resource_name);
@@ -357,6 +356,10 @@ void runScriptInContext(v8::Isolate* isolate, v8::Local<v8::Context> context, co
 	}
 }
 
+void runScriptInContext(v8::Isolate* isolate, v8::Local<v8::Context> context, const char* utf8_source, const char* name, Local<Value> *result, Local<Value> *exception) {
+	runScriptInContext(isolate, context, utf8_source, strlen(utf8_source), name, result, exception);
+}
+
 JNIEXPORT jstring JNICALL Java_com_mv8_V8Context__1runScript(JNIEnv *env, jclass clz, jlong isolatePtr, jlong contextPtr, jstring scriptSource, jstring scriptName)
 {
 	V8IsolateData *isolateData = reinterpret_cast<V8IsolateData *>(isolatePtr);
@@ -368,12 +371,29 @@ JNIEXPORT jstring JNICALL Java_com_mv8_V8Context__1runScript(JNIEnv *env, jclass
 	Local<Context> context = persistentContext->Get(isolate);
 	Context::Scope context_scope(context);
 
-	const char *utf8SourceString = env->GetStringUTFChars(scriptSource, NULL);
+	// See https://stackoverflow.com/questions/32205446/getting-true-utf-8-characters-in-java-jni
+	// for this hacky conversion of extended UTF-8 characters to internal char*. (getStringUtfChars() messes with
+	// the string contents, does not support UTF-8 fully for conversion from Java's UTF-16)
+	// See also CallbackTest.testEncoding in Java;
+    const jclass stringClass = env->GetObjectClass(scriptSource);
+    const jmethodID getBytes = env->GetMethodID(stringClass, "getBytes", "(Ljava/lang/String;)[B");
+    const jstring charsetName = env->NewStringUTF("UTF-8");
+    const jbyteArray stringJbytes = (jbyteArray) env->CallObjectMethod(scriptSource, getBytes, charsetName);
+
+    // NOTE: the trick here is that pBytes is non-null-terminated string
+    const jsize length = env->GetArrayLength(stringJbytes);
+    const jbyte* pBytes = env->GetByteArrayElements(stringJbytes, NULL);
+
+	const char *utf8SourceString = (const char *)pBytes;
 	const char *utf8NameString = env->GetStringUTFChars(scriptName, NULL);
+
 	Local<Value> result;
 	Local<Value> exception;
-	runScriptInContext(isolate, context, utf8SourceString, utf8NameString, &result, &exception);
-	env->ReleaseStringUTFChars(scriptSource, utf8SourceString);
+	runScriptInContext(isolate, context, utf8SourceString, (int)length, utf8NameString, &result, &exception);
+
+    env->ReleaseByteArrayElements(stringJbytes, (jbyte*)pBytes, JNI_ABORT);
+	env->DeleteLocalRef(stringJbytes);
+    env->DeleteLocalRef(charsetName);
 	env->ReleaseStringUTFChars(scriptName, utf8NameString);
 
 	if (!exception.IsEmpty()) {

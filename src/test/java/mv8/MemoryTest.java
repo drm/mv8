@@ -36,7 +36,7 @@ public class MemoryTest {
 					System.gc();
 					return str;
 				});
-				ctx.runScript("for (let n = 0; n < 1000; n ++) { JSON.stringify(__calljava(str)); }", "");
+				ctx.runScript("for (let n = 0; n < 50; n ++) { JSON.stringify(__calljava(str)); }", "");
 			}
 		}
 	}

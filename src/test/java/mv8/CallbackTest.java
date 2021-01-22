@@ -40,7 +40,11 @@ public class CallbackTest {
 			});
 
 			context.runScript("__calljava(\"\");", "");
+		} catch (RuntimeException e) {
+			Assert.assertEquals("Foo!", e.getMessage());
+			return;
 		}
+		Assert.fail("Exception should have been thrown");
 	}
 
 
@@ -80,6 +84,16 @@ public class CallbackTest {
 				Assert.assertEquals("0", s.get(1));
 				Assert.assertEquals("9", s.get(10));
 			}
+		}
+	}
+
+	@Test
+	public void testEncoding() throws Exception {
+		try (V8Isolate isolate = V8.createIsolate();
+			 V8Context context = isolate.createContext("foo")
+		) {
+			Assert.assertEquals("hello world", context.runScript("\"hello\" + \" \" + \"world\";", "<test>"));
+			Assert.assertEquals("𝓈𝓁", context.runScript("\"𝓈𝓁\"", "<test>"));
 		}
 	}
 }
